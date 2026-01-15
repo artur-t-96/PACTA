@@ -1,0 +1,20 @@
+# Render deployment configuration
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: pacta
+    env: docker
+    plan: free
+    healthCheckPath: /login
+    envVars:
+      - key: LOGIN
+        value: rekruter
+      - key: PASSWORD
+        sync: false  # Set manually in Render dashboard
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: CEIDG_API_KEY
+        sync: false  # Set manually in Render dashboard

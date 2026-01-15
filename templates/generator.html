@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Generator Umów - {{ app_name }}{% endblock %}
+
+{% block body %}
+<div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <span class="logo">🏛️</span>
+            <h1>PACTA</h1>
+            <span class="version">v1.0</span>
+        </div>
+        <div class="header-right">
+            <a href="/logout" class="btn btn-outline btn-small">Wyloguj</a>
+        </div>
+    </header>
+    
+    <!-- Main content -->
+    <main class="main-content">
+        <!-- Formularz -->
+        <section class="form-section">
+            <div class="section-header">
+                <h2>📝 Generator Umowy B2B</h2>
+            </div>
+            
+            <form id="contractForm" class="contract-form">
+                <!-- Typ umowy -->
+                <fieldset class="form-fieldset">
+                    <legend>Typ umowy</legend>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="typ_umowy" value="z_dzialalnoscia" checked>
+                            <span class="radio-text">Z działalnością gospodarczą</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="typ_umowy" value="bez_dzialalnosci">
+                            <span class="radio-text">Bez działalności (zamierza założyć)</span>
+                        </label>
+                    </div>
+                </fieldset>
+                
+                <!-- Dane partnera -->
+                <fieldset class="form-fieldset">
+                    <legend>Dane partnera</legend>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="imie_nazwisko">Imię i nazwisko *</label>
+                            <input type="text" id="imie_nazwisko" name="imie_nazwisko" required placeholder="Jan Kowalski">
+                        </div>
+                        <div class="form-group">
+                            <label>Płeć *</label>
+                            <div class="radio-inline">
+                                <label class="radio-label">
+                                    <input type="radio" name="plec" value="mezczyzna" checked>
+                                    <span>Mężczyzna</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="plec" value="kobieta">
+                                    <span>Kobieta</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="telefon">Telefon *</label>
+                            <input type="tel" id="telefon" name="telefon" required placeholder="+48 123 456 789">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">E-mail *</label>
+                            <input type="email" id="email" name="email" required placeholder="jan.kowalski@email.com">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- Dane firmy (dla typu z_dzialalnoscia) -->
+                <fieldset class="form-fieldset" id="fieldset_firma">
+                    <legend>Dane firmy</legend>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-wide">
+                            <label for="nip">NIP *</label>
+                            <div class="input-with-button">
+                                <input type="text" id="nip" name="nip" placeholder="1234567890" maxlength="10">
+                                <button type="button" id="btnCeidg" class="btn btn-secondary">🔍 Pobierz z CEIDG</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-wide">
+                            <label for="nazwa_firmy">Nazwa firmy *</label>
+                            <input type="text" id="nazwa_firmy" name="nazwa_firmy" placeholder="Jan Kowalski Software Development">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-wide">
+                            <label for="adres_firmy">Adres firmy *</label>
+                            <input type="text" id="adres_firmy" name="adres_firmy" placeholder="ul. Marszałkowska 100/10">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="kod_pocztowy">Kod pocztowy *</label>
+                            <input type="text" id="kod_pocztowy" name="kod_pocztowy" placeholder="00-001" maxlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="miasto">Miasto *</label>
+                            <input type="text" id="miasto" name="miasto" placeholder="Warszawa">
+                        </div>
+                        <div class="form-group">
+                            <label for="regon">REGON</label>
+                            <input type="text" id="regon" name="regon" placeholder="123456789">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- Dane osobowe (dla typu bez_dzialalnosci) -->
+                <fieldset class="form-fieldset hidden" id="fieldset_osoba">
+                    <legend>Dane osobowe</legend>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-wide">
+                            <label for="adres_zamieszkania">Adres zamieszkania *</label>
+                            <input type="text" id="adres_zamieszkania" name="adres_zamieszkania" placeholder="ul. Przykładowa 10, 00-001 Warszawa">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nr_dowodu">Numer dowodu osobistego *</label>
+                            <input type="text" id="nr_dowodu" name="nr_dowodu" placeholder="ABC123456">
+                        </div>
+                        <div class="form-group">
+                            <label for="pesel">PESEL *</label>
+                            <input type="text" id="pesel" name="pesel" placeholder="12345678901" maxlength="11">
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- Warunki umowy -->
+                <fieldset class="form-fieldset">
+                    <legend>Warunki umowy</legend>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="numer_umowy">Numer umowy *</label>
+                            <input type="text" id="numer_umowy" name="numer_umowy" required placeholder="B2B/2026/01/001">
+                        </div>
+                        <div class="form-group">
+                            <label for="specjalizacja">Specjalizacja IT *</label>
+                            <select id="specjalizacja" name="specjalizacja" required>
+                                <option value="">Wybierz...</option>
+                                <option value="Software Development">Software Development</option>
+                                <option value="DevOps / Cloud Engineering">DevOps / Cloud Engineering</option>
+                                <option value="Quality Assurance (QA)">Quality Assurance (QA)</option>
+                                <option value="Test Automation">Test Automation</option>
+                                <option value="Data & Analytics">Data & Analytics</option>
+                                <option value="AI / Machine Learning">AI / Machine Learning</option>
+                                <option value="Cybersecurity">Cybersecurity</option>
+                                <option value="IT Project Management">IT Project Management</option>
+                                <option value="Database Administration">Database Administration</option>
+                                <option value="IT Architecture">IT Architecture</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="stawka_godzinowa">Stawka godzinowa netto (PLN) *</label>
+                            <input type="number" id="stawka_godzinowa" name="stawka_godzinowa" required placeholder="150" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="stawka_slownie">Stawka słownie *</label>
+                            <input type="text" id="stawka_slownie" name="stawka_slownie" required placeholder="sto pięćdziesiąt złotych">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Czas trwania umowy *</label>
+                            <div class="radio-inline">
+                                <label class="radio-label">
+                                    <input type="radio" name="czas_umowy" value="nieokreslony" checked>
+                                    <span>Nieokreślony</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="czas_umowy" value="okreslony">
+                                    <span>Określony</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group hidden" id="group_data_konca">
+                            <label for="data_konca_umowy">Data końca umowy</label>
+                            <input type="date" id="data_konca_umowy" name="data_konca_umowy">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="okres_wypowiedzenia">Okres wypowiedzenia *</label>
+                            <select id="okres_wypowiedzenia" name="okres_wypowiedzenia" required>
+                                <option value="1 miesiąca" selected>1 miesiąc</option>
+                                <option value="2 miesięcy">2 miesiące</option>
+                                <option value="3 miesięcy">3 miesiące</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="data_rozpoczecia">Data rozpoczęcia usług *</label>
+                            <input type="date" id="data_rozpoczecia" name="data_rozpoczecia" required>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- Klient projektu (Załącznik 3) -->
+                <fieldset class="form-fieldset">
+                    <legend>Klient projektu (Załącznik 3)</legend>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-wide">
+                            <label for="klient_nazwa">Nazwa klienta *</label>
+                            <input type="text" id="klient_nazwa" name="klient_nazwa" required placeholder="Bank XYZ S.A.">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-wide">
+                            <label for="klient_adres">Adres / Miasto *</label>
+                            <input type="text" id="klient_adres" name="klient_adres" required placeholder="Warszawa">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-group-wide">
+                            <label for="klient_opis">Opis projektu</label>
+                            <textarea id="klient_opis" name="klient_opis" rows="2" placeholder="Rozwój aplikacji mobilnej..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="klient_data_rozpoczecia">Data rozpoczęcia u klienta *</label>
+                            <input type="date" id="klient_data_rozpoczecia" name="klient_data_rozpoczecia" required>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <!-- Przycisk generowania -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large" id="btnGenerate">
+                        📄 Generuj umowę
+                    </button>
+                </div>
+            </form>
+        </section>
+        
+        <!-- Chatbot -->
+        <section class="chat-section">
+            <div class="section-header">
+                <h2>💬 Asystent PACTA</h2>
+            </div>
+            
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message message-bot">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <p>Cześć! Jestem asystentem PACTA.</p>
+                            <p>Mogę Ci pomóc z:</p>
+                            <ul>
+                                <li>📝 Wyjaśnieniem zapisów umowy</li>
+                                <li>⚙️ Zmianą parametrów (np. okres wypowiedzenia)</li>
+                                <li>❓ Odpowiedzią na pytania</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick buttons -->
+                <div class="chat-quick-buttons">
+                    <button type="button" class="btn btn-quick" data-question="Co oznacza §5 o prawach autorskich?">§5 Prawa autorskie</button>
+                    <button type="button" class="btn btn-quick" data-question="Wyjaśnij zakaz konkurencji">Zakaz konkurencji</button>
+                    <button type="button" class="btn btn-quick" data-question="Jakie są kary umowne?">Kary umowne</button>
+                    <button type="button" class="btn btn-quick" data-question="Czy mogę mieć innych klientów?">Inni klienci?</button>
+                </div>
+                
+                <!-- Chat input -->
+                <div class="chat-input-container">
+                    <input type="text" id="chatInput" placeholder="Wpisz pytanie..." autocomplete="off">
+                    <button type="button" id="btnSendChat" class="btn btn-primary">➤</button>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <p>Generowanie umowy...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/app.js"></script>
+{% endblock %}

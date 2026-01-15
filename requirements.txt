@@ -7,3 +7,8 @@ httpx==0.26.0
 anthropic==0.18.1
 python-dotenv==1.0.0
 itsdangerous==2.1.2
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+# Document templates
+docxtpl==0.16.7

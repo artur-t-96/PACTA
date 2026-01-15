@@ -13,9 +13,16 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CEIDG_API_KEY = os.getenv("CEIDG_API_KEY", "")
 CEIDG_API_URL = os.getenv("CEIDG_API_URL", "https://dane.biznes.gov.pl/api/ceidg/v2")
 
+# Database
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/pacta")
+
+# Storage paths (Persistent Disk)
+TEMPLATES_DIR = os.getenv("TEMPLATES_DIR", "/var/data/templates")
+GENERATED_DIR = os.getenv("GENERATED_DIR", "/var/data/generated")
+
 # App
 APP_NAME = "PACTA"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 APP_DESCRIPTION = "Partner And Contract Transaction Assistant"
 
 # Session

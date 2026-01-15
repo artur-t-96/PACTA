@@ -1,0 +1,660 @@
+{% extends "base.html" %}
+
+{% block title %}Szablony dokumentow - {{ app_name }}{% endblock %}
+
+{% block body %}
+<div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <span class="logo">🏛️</span>
+            <h1>PACTA</h1>
+            <span class="version">v1.1</span>
+        </div>
+        <nav class="header-nav">
+            <a href="/generator" class="nav-link">Generator umow</a>
+            <a href="/documents/generate" class="nav-link">Generuj z szablonu</a>
+            <a href="/admin/templates" class="nav-link active">Szablony</a>
+        </nav>
+        <div class="header-right">
+            <a href="/logout" class="btn btn-outline btn-small">Wyloguj</a>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="main-content templates-page">
+        <section class="page-section">
+            <div class="section-header">
+                <h2>📁 Zarzadzanie szablonami dokumentow</h2>
+                <button id="btnUpload" class="btn btn-primary">+ Dodaj szablon</button>
+            </div>
+
+            <div class="info-box">
+                <strong>Jak przygotowac szablon?</strong>
+                <p>Uzyj znacznikow <code>{{NAZWA_POLA}}</code> w dokumencie .docx. Pola zostaną automatycznie wykryte.</p>
+                <p>Przyklad: <code>{{IMIE_NAZWISKO}}</code>, <code>{{NIP}}</code>, <code>{{DATA_UMOWY}}</code></p>
+            </div>
+
+            <!-- Templates list -->
+            <div id="templatesList" class="templates-list">
+                <div class="loading">Ladowanie szablonow...</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Dodaj nowy szablon</h3>
+                <button class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="uploadForm" class="modal-form">
+                <div class="form-group">
+                    <label for="templateName">Nazwa szablonu *</label>
+                    <input type="text" id="templateName" name="name" required placeholder="np. Umowa o wspolpracy">
+                </div>
+                <div class="form-group">
+                    <label for="templateDescription">Opis</label>
+                    <textarea id="templateDescription" name="description" rows="2" placeholder="Krotki opis szablonu..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="templateFile">Plik szablonu (.docx) *</label>
+                    <input type="file" id="templateFile" name="file" accept=".docx" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Przeslij szablon</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Template Details Modal -->
+    <div id="detailsModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="detailsTitle">Szczegoly szablonu</h3>
+                <button class="btn-close" onclick="closeDetailsModal()">&times;</button>
+            </div>
+            <div id="detailsContent" class="modal-body">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .templates-page {
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .page-section {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .section-header h2 {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .header-nav {
+        display: flex;
+        gap: 8px;
+    }
+
+    .nav-link {
+        padding: 8px 16px;
+        color: var(--color-text-light);
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+
+    .nav-link:hover {
+        background: var(--color-bg);
+        color: var(--color-text);
+    }
+
+    .nav-link.active {
+        background: var(--color-primary-light);
+        color: var(--color-primary);
+        font-weight: 500;
+    }
+
+    .info-box {
+        background: var(--color-primary-light);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-bottom: 24px;
+        font-size: 13px;
+    }
+
+    .info-box strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--color-primary-dark);
+    }
+
+    .info-box code {
+        background: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    .templates-list {
+        display: grid;
+        gap: 16px;
+    }
+
+    .template-card {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        transition: box-shadow 0.2s;
+    }
+
+    .template-card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .template-info h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .template-info .description {
+        color: var(--color-text-light);
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .template-info .meta {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: var(--color-text-light);
+    }
+
+    .template-info .fields-badge {
+        background: var(--color-primary-light);
+        color: var(--color-primary);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    .template-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border: none;
+        background: var(--color-bg);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        background: var(--color-primary-light);
+    }
+
+    .btn-icon.danger:hover {
+        background: #fee2e2;
+        color: var(--color-danger);
+    }
+
+    /* Modal styles */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal.hidden {
+        display: none;
+    }
+
+    .modal-content {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-large {
+        max-width: 700px;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .modal-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .btn-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--color-text-light);
+    }
+
+    .modal-form {
+        padding: 24px;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+    }
+
+    .fields-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .field-tag {
+        background: var(--color-bg);
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-family: monospace;
+    }
+
+    .field-labels-form {
+        margin-top: 20px;
+    }
+
+    .field-label-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .field-label-row .field-name {
+        width: 150px;
+        font-family: monospace;
+        font-size: 13px;
+        color: var(--color-text-light);
+    }
+
+    .field-label-row input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: var(--color-text-light);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--color-text-light);
+    }
+
+    .empty-state .icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    /* Button styles (supplement to main CSS) */
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--color-primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--color-primary-dark);
+    }
+
+    .btn-secondary {
+        background: var(--color-bg);
+        color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-border);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // State
+    let templates = [];
+
+    // DOM elements
+    const templatesList = document.getElementById('templatesList');
+    const uploadModal = document.getElementById('uploadModal');
+    const detailsModal = document.getElementById('detailsModal');
+    const uploadForm = document.getElementById('uploadForm');
+
+    // Load templates on page load
+    document.addEventListener('DOMContentLoaded', loadTemplates);
+
+    // Upload button
+    document.getElementById('btnUpload').addEventListener('click', () => {
+        uploadModal.classList.remove('hidden');
+    });
+
+    // Upload form submit
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+        formData.append('name', document.getElementById('templateName').value);
+        formData.append('description', document.getElementById('templateDescription').value);
+        formData.append('file', document.getElementById('templateFile').files[0]);
+
+        try {
+            const response = await fetch('/api/templates/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Blad przesylania');
+            }
+
+            const result = await response.json();
+            alert(`Szablon dodany! Wykryto ${result.fields.length} pol.`);
+            closeModal();
+            uploadForm.reset();
+            loadTemplates();
+
+        } catch (error) {
+            alert('Blad: ' + error.message);
+        }
+    });
+
+    async function loadTemplates() {
+        templatesList.innerHTML = '<div class="loading">Ladowanie szablonow...</div>';
+
+        try {
+            const response = await fetch('/api/templates');
+            if (!response.ok) throw new Error('Blad ladowania');
+
+            const data = await response.json();
+            templates = data.templates;
+            renderTemplates();
+
+        } catch (error) {
+            templatesList.innerHTML = `<div class="error-message">Blad ladowania szablonow: ${error.message}</div>`;
+        }
+    }
+
+    function renderTemplates() {
+        if (templates.length === 0) {
+            templatesList.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📄</div>
+                    <p>Brak szablonow. Dodaj pierwszy szablon!</p>
+                </div>
+            `;
+            return;
+        }
+
+        templatesList.innerHTML = templates.map(t => `
+            <div class="template-card">
+                <div class="template-info">
+                    <h4>${escapeHtml(t.name)}</h4>
+                    <p class="description">${escapeHtml(t.description || 'Brak opisu')}</p>
+                    <div class="meta">
+                        <span class="fields-badge">${t.field_count} pol</span>
+                        <span>📄 ${escapeHtml(t.original_filename)}</span>
+                        <span>🕐 ${formatDate(t.created_at)}</span>
+                    </div>
+                </div>
+                <div class="template-actions">
+                    <button class="btn-icon" onclick="showDetails(${t.id})" title="Szczegoly">👁️</button>
+                    <button class="btn-icon" onclick="downloadTemplate(${t.id})" title="Pobierz">⬇️</button>
+                    <button class="btn-icon danger" onclick="deleteTemplate(${t.id})" title="Usun">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function showDetails(id) {
+        const detailsContent = document.getElementById('detailsContent');
+        detailsContent.innerHTML = '<div class="loading">Ladowanie...</div>';
+        detailsModal.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`/api/templates/${id}`);
+            if (!response.ok) throw new Error('Blad ladowania');
+
+            const template = await response.json();
+
+            document.getElementById('detailsTitle').textContent = template.name;
+
+            detailsContent.innerHTML = `
+                <p><strong>Opis:</strong> ${escapeHtml(template.description || 'Brak')}</p>
+                <p><strong>Plik:</strong> ${escapeHtml(template.original_filename)}</p>
+                <p><strong>Utworzono:</strong> ${formatDate(template.created_at)}</p>
+
+                <h4 style="margin-top: 20px;">Wykryte pola (${template.fields.length}):</h4>
+                <div class="fields-list">
+                    ${template.fields.map(f => `<span class="field-tag">{{${f}}}</span>`).join('')}
+                </div>
+
+                <form class="field-labels-form" onsubmit="saveLabels(event, ${id})">
+                    <h4 style="margin-top: 24px;">Etykiety pol:</h4>
+                    <p style="font-size: 12px; color: var(--color-text-light); margin-bottom: 12px;">
+                        Ustaw czytelne nazwy pol dla uzytkownikow
+                    </p>
+                    ${template.fields.map(f => `
+                        <div class="field-label-row">
+                            <span class="field-name">${f}</span>
+                            <input type="text" name="${f}" value="${escapeHtml(template.field_labels[f] || '')}"
+                                   placeholder="${formatFieldName(f)}">
+                        </div>
+                    `).join('')}
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Zapisz etykiety</button>
+                    </div>
+                </form>
+            `;
+
+        } catch (error) {
+            detailsContent.innerHTML = `<div class="error-message">Blad: ${error.message}</div>`;
+        }
+    }
+
+    async function saveLabels(event, id) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const labels = {};
+
+        for (const [key, value] of formData.entries()) {
+            if (value.trim()) {
+                labels[key] = value.trim();
+            }
+        }
+
+        try {
+            const response = await fetch(`/api/templates/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ field_labels: labels })
+            });
+
+            if (!response.ok) throw new Error('Blad zapisu');
+
+            alert('Etykiety zapisane!');
+
+        } catch (error) {
+            alert('Blad: ' + error.message);
+        }
+    }
+
+    function downloadTemplate(id) {
+        window.location.href = `/api/templates/${id}/download`;
+    }
+
+    async function deleteTemplate(id) {
+        if (!confirm('Czy na pewno chcesz usunac ten szablon?')) return;
+
+        try {
+            const response = await fetch(`/api/templates/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Blad usuwania');
+
+            loadTemplates();
+
+        } catch (error) {
+            alert('Blad: ' + error.message);
+        }
+    }
+
+    function closeModal() {
+        uploadModal.classList.add('hidden');
+    }
+
+    function closeDetailsModal() {
+        detailsModal.classList.add('hidden');
+    }
+
+    // Close modal on background click
+    uploadModal.addEventListener('click', (e) => {
+        if (e.target === uploadModal) closeModal();
+    });
+
+    detailsModal.addEventListener('click', (e) => {
+        if (e.target === detailsModal) closeDetailsModal();
+    });
+
+    // Utilities
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('pl-PL', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    function formatFieldName(field) {
+        return field.replace(/_/g, ' ').toLowerCase()
+            .replace(/^./, c => c.toUpperCase());
+    }
+</script>
+{% endblock %}

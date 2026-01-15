@@ -1,0 +1,622 @@
+{% extends "base.html" %}
+
+{% block title %}Generuj dokument - {{ app_name }}{% endblock %}
+
+{% block body %}
+<div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <span class="logo">🏛️</span>
+            <h1>PACTA</h1>
+            <span class="version">v1.1</span>
+        </div>
+        <nav class="header-nav">
+            <a href="/generator" class="nav-link">Generator umow</a>
+            <a href="/documents/generate" class="nav-link active">Generuj z szablonu</a>
+            <a href="/admin/templates" class="nav-link">Szablony</a>
+        </nav>
+        <div class="header-right">
+            <a href="/logout" class="btn btn-outline btn-small">Wyloguj</a>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="main-content generator-page">
+        <section class="page-section">
+            <div class="section-header">
+                <h2>📄 Generuj dokument z szablonu</h2>
+            </div>
+
+            <!-- Template selector -->
+            <div class="template-selector">
+                <label for="templateSelect">Wybierz szablon:</label>
+                <select id="templateSelect">
+                    <option value="">-- Wybierz szablon --</option>
+                </select>
+            </div>
+
+            <!-- Template info -->
+            <div id="templateInfo" class="template-info-box hidden">
+                <div class="info-header">
+                    <span id="templateInfoName"></span>
+                    <span id="templateInfoFields" class="fields-count"></span>
+                </div>
+                <p id="templateInfoDesc"></p>
+            </div>
+
+            <!-- Dynamic form -->
+            <form id="generateForm" class="generate-form hidden">
+                <div id="fieldsContainer">
+                    <!-- Fields will be rendered here -->
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">Wyczysc</button>
+                    <button type="submit" class="btn btn-primary btn-generate">
+                        <span class="btn-text">Generuj dokument</span>
+                        <span class="btn-loading hidden">Generowanie...</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Empty state -->
+            <div id="emptyState" class="empty-state">
+                <div class="icon">📋</div>
+                <p>Wybierz szablon z listy, aby rozpoczac generowanie dokumentu.</p>
+                <p class="hint">Nie masz szablonow? <a href="/admin/templates">Dodaj szablon</a></p>
+            </div>
+        </section>
+    </main>
+</div>
+
+<style>
+    .generator-page {
+        padding: 24px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .page-section {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .section-header {
+        margin-bottom: 24px;
+    }
+
+    .section-header h2 {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .header-nav {
+        display: flex;
+        gap: 8px;
+    }
+
+    .nav-link {
+        padding: 8px 16px;
+        color: var(--color-text-light);
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+
+    .nav-link:hover {
+        background: var(--color-bg);
+        color: var(--color-text);
+    }
+
+    .nav-link.active {
+        background: var(--color-primary-light);
+        color: var(--color-primary);
+        font-weight: 500;
+    }
+
+    .template-selector {
+        margin-bottom: 20px;
+    }
+
+    .template-selector label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 6px;
+    }
+
+    .template-selector select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+    }
+
+    .template-selector select:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    .template-info-box {
+        background: var(--color-primary-light);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .template-info-box.hidden {
+        display: none;
+    }
+
+    .info-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .info-header span:first-child {
+        font-weight: 600;
+        color: var(--color-primary-dark);
+    }
+
+    .fields-count {
+        background: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        color: var(--color-primary);
+    }
+
+    .template-info-box p {
+        font-size: 13px;
+        color: var(--color-text);
+    }
+
+    .generate-form {
+        border-top: 1px solid var(--color-border);
+        padding-top: 24px;
+    }
+
+    .generate-form.hidden {
+        display: none;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 6px;
+    }
+
+    .form-group label .field-code {
+        font-family: monospace;
+        font-size: 11px;
+        color: var(--color-text-light);
+        font-weight: normal;
+        margin-left: 8px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    .form-group.required label::after {
+        content: ' *';
+        color: var(--color-danger);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    @media (max-width: 600px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--color-primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--color-primary-dark);
+    }
+
+    .btn-primary:disabled {
+        background: var(--color-secondary);
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background: var(--color-bg);
+        color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-border);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .btn-generate {
+        min-width: 180px;
+    }
+
+    .btn-loading.hidden {
+        display: none;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--color-text-light);
+    }
+
+    .empty-state.hidden {
+        display: none;
+    }
+
+    .empty-state .icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state .hint {
+        margin-top: 16px;
+        font-size: 13px;
+    }
+
+    .empty-state a {
+        color: var(--color-primary);
+    }
+
+    .success-message {
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        padding: 16px;
+        border-radius: var(--radius-md);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .error-message {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: var(--color-danger);
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // State
+    let templates = [];
+    let selectedTemplate = null;
+
+    // DOM elements
+    const templateSelect = document.getElementById('templateSelect');
+    const templateInfo = document.getElementById('templateInfo');
+    const generateForm = document.getElementById('generateForm');
+    const fieldsContainer = document.getElementById('fieldsContainer');
+    const emptyState = document.getElementById('emptyState');
+
+    // Load templates on page load
+    document.addEventListener('DOMContentLoaded', loadTemplates);
+
+    // Template selection change
+    templateSelect.addEventListener('change', async (e) => {
+        const templateId = e.target.value;
+
+        if (!templateId) {
+            hideForm();
+            return;
+        }
+
+        await loadTemplateDetails(templateId);
+    });
+
+    // Form submission
+    generateForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await generateDocument();
+    });
+
+    async function loadTemplates() {
+        try {
+            const response = await fetch('/api/templates');
+            if (!response.ok) throw new Error('Blad ladowania');
+
+            const data = await response.json();
+            templates = data.templates;
+
+            // Populate dropdown
+            templateSelect.innerHTML = '<option value="">-- Wybierz szablon --</option>';
+            templates.forEach(t => {
+                templateSelect.innerHTML += `<option value="${t.id}">${escapeHtml(t.name)} (${t.field_count} pol)</option>`;
+            });
+
+            if (templates.length === 0) {
+                emptyState.innerHTML = `
+                    <div class="icon">📋</div>
+                    <p>Brak dostepnych szablonow.</p>
+                    <p class="hint"><a href="/admin/templates">Dodaj pierwszy szablon</a></p>
+                `;
+            }
+
+        } catch (error) {
+            console.error('Error loading templates:', error);
+        }
+    }
+
+    async function loadTemplateDetails(templateId) {
+        try {
+            const response = await fetch(`/api/templates/${templateId}`);
+            if (!response.ok) throw new Error('Blad ladowania');
+
+            selectedTemplate = await response.json();
+            showForm();
+
+        } catch (error) {
+            alert('Blad ladowania szablonu: ' + error.message);
+        }
+    }
+
+    function showForm() {
+        // Show template info
+        document.getElementById('templateInfoName').textContent = selectedTemplate.name;
+        document.getElementById('templateInfoDesc').textContent = selectedTemplate.description || 'Brak opisu';
+        document.getElementById('templateInfoFields').textContent = `${selectedTemplate.fields.length} pol`;
+        templateInfo.classList.remove('hidden');
+
+        // Generate form fields
+        renderFormFields();
+
+        // Show form, hide empty state
+        generateForm.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+    }
+
+    function hideForm() {
+        templateInfo.classList.add('hidden');
+        generateForm.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        selectedTemplate = null;
+    }
+
+    function renderFormFields() {
+        const fields = selectedTemplate.fields_with_labels || [];
+
+        // Group fields into rows of 2 for short fields, 1 for long
+        let html = '';
+        let rowFields = [];
+
+        fields.forEach((f, index) => {
+            const isLongField = f.field.includes('ADRES') ||
+                               f.field.includes('OPIS') ||
+                               f.field.includes('TRESC') ||
+                               f.field.includes('UWAGI');
+
+            if (isLongField) {
+                // Flush any pending row
+                if (rowFields.length > 0) {
+                    html += renderRow(rowFields);
+                    rowFields = [];
+                }
+                // Render single wide field
+                html += renderField(f, true);
+            } else {
+                rowFields.push(f);
+                if (rowFields.length === 2) {
+                    html += renderRow(rowFields);
+                    rowFields = [];
+                }
+            }
+        });
+
+        // Flush remaining fields
+        if (rowFields.length > 0) {
+            html += renderRow(rowFields);
+        }
+
+        fieldsContainer.innerHTML = html;
+    }
+
+    function renderRow(fields) {
+        return `<div class="form-row">${fields.map(f => renderField(f, false)).join('')}</div>`;
+    }
+
+    function renderField(field, isWide) {
+        const isTextarea = field.field.includes('ADRES') ||
+                          field.field.includes('OPIS') ||
+                          field.field.includes('TRESC') ||
+                          field.field.includes('UWAGI');
+
+        const inputType = getInputType(field.field);
+
+        return `
+            <div class="form-group required">
+                <label for="field_${field.field}">
+                    ${escapeHtml(field.label)}
+                    <span class="field-code">{{${field.field}}}</span>
+                </label>
+                ${isTextarea ?
+                    `<textarea id="field_${field.field}" name="${field.field}" rows="3" required></textarea>` :
+                    `<input type="${inputType}" id="field_${field.field}" name="${field.field}" required>`
+                }
+            </div>
+        `;
+    }
+
+    function getInputType(fieldName) {
+        if (fieldName.includes('EMAIL')) return 'email';
+        if (fieldName.includes('TELEFON')) return 'tel';
+        if (fieldName.includes('DATA')) return 'date';
+        if (fieldName.includes('KWOTA') || fieldName.includes('STAWKA') || fieldName.includes('CENA')) return 'number';
+        return 'text';
+    }
+
+    async function generateDocument() {
+        if (!selectedTemplate) return;
+
+        const formData = new FormData(generateForm);
+        const data = {};
+
+        for (const [key, value] of formData.entries()) {
+            if (key.startsWith('field_')) {
+                continue; // Skip, we use the actual field names
+            }
+            data[key] = value;
+        }
+
+        // Also get fields by name
+        selectedTemplate.fields.forEach(field => {
+            const input = document.querySelector(`[name="${field}"]`);
+            if (input) {
+                data[field] = input.value;
+            }
+        });
+
+        // Show loading
+        const btnText = generateForm.querySelector('.btn-text');
+        const btnLoading = generateForm.querySelector('.btn-loading');
+        const submitBtn = generateForm.querySelector('button[type="submit"]');
+
+        btnText.classList.add('hidden');
+        btnLoading.classList.remove('hidden');
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/api/templates/${selectedTemplate.id}/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Blad generowania');
+            }
+
+            // Download file
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            // Get filename from header
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'dokument.docx';
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename=(.+)/);
+                if (match) {
+                    filename = match[1].replace(/"/g, '');
+                }
+            }
+
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            // Show success message
+            showMessage('success', `Dokument "${filename}" zostal wygenerowany i pobrany!`);
+
+        } catch (error) {
+            showMessage('error', 'Blad: ' + error.message);
+        } finally {
+            btnText.classList.remove('hidden');
+            btnLoading.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    }
+
+    function resetForm() {
+        generateForm.reset();
+    }
+
+    function showMessage(type, text) {
+        // Remove existing messages
+        document.querySelectorAll('.success-message, .error-message').forEach(el => el.remove());
+
+        const div = document.createElement('div');
+        div.className = type === 'success' ? 'success-message' : 'error-message';
+        div.innerHTML = type === 'success' ? `<span>✅</span> ${escapeHtml(text)}` : escapeHtml(text);
+
+        generateForm.insertBefore(div, generateForm.firstChild);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => div.remove(), 5000);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

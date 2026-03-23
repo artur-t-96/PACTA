@@ -1,127 +1,153 @@
-# 🏛️ PACTA - Partner And Contract Transaction Assistant
+# ⚖️ PARAGRAF v6.6 — AI Contract Management
 
-Generator umów B2B z asystentem AI dla B2B.net S.A.
+System zarządzania umowami B2B dla B2B.net S.A.
 
-## ✨ Funkcjonalności
-
-- 📝 **Generator umów** - automatyczne wypełnianie szablonów DOCX
-- 🔍 **Integracja CEIDG** - auto-uzupełnianie danych firmy po NIP
-- 💬 **Asystent AI** - wyjaśnianie zapisów umowy + modyfikacja parametrów
-- 📄 **Eksport DOCX** - kompletna umowa z załącznikami w jednym pliku
-
-## 🚀 Szybki start
-
-### Wymagania
-- Python 3.11+
-- Klucz API Anthropic (opcjonalnie, dla chatbota AI)
-- Klucz API CEIDG (opcjonalnie, dla pobierania danych firm)
-
-### Instalacja lokalna
+## Quick Start
 
 ```bash
-# Klonowanie repozytorium
-git clone <repo-url>
-cd pacta
-
-# Instalacja zależności
+# Backend (port 8001)
+cd backend && cp .env.example .env  # fill in API keys
 pip install -r requirements.txt
+python3 -m uvicorn main:app --port 8001 --reload
 
-# Konfiguracja
-cp .env.example .env
-# Edytuj .env i uzupełnij klucze API
+# Frontend (port 3002)
+cd frontend && npm install
+PORT=3002 npm run dev
 
-# Uruchomienie
-python main.py
+# Or use Makefile:
+make dev
 ```
 
-Aplikacja będzie dostępna pod adresem: http://localhost:8000
-
-### Deploy na Render.com
-
-1. Utwórz nowy Web Service na Render
-2. Połącz z repozytorium GitHub
-3. Render automatycznie wykryje `Dockerfile`
-4. Ustaw zmienne środowiskowe w dashboardzie Render:
-   - `PASSWORD` - hasło do logowania
-   - `ANTHROPIC_API_KEY` - klucz API Claude
-   - `CEIDG_API_KEY` - klucz API CEIDG (opcjonalnie)
-
-## 📁 Struktura projektu
+## Architecture
 
 ```
-pacta/
-├── main.py                 # Punkt wejścia FastAPI
-├── config.py               # Konfiguracja
-├── requirements.txt        # Zależności
-├── Dockerfile              # Do deploy
-│
-├── routers/                # Endpointy API
-│   ├── auth.py             # Logowanie
-│   ├── ceidg.py            # Pobieranie danych z CEIDG
-│   ├── chat.py             # ChatBot AI
-│   └── contract.py         # Generowanie umowy
-│
-├── services/               # Logika biznesowa
-│   ├── ceidg_client.py     # Klient CEIDG API
-│   ├── chat_assistant.py   # Asystent AI
-│   └── document_generator.py # Generator DOCX
-│
-├── templates/              # Szablony HTML (Jinja2)
-│   ├── base.html
-│   ├── login.html
-│   └── generator.html
-│
-├── static/                 # CSS, JS
-│   ├── style.css
-│   └── app.js
-│
-└── data/
-    └── knowledge_base.py   # Baza wiedzy dla chatbota
+backend/
+├── main.py              # App entry, middleware, standalone endpoints (250 lines)
+├── database.py           # SQLAlchemy models (Contract, AuditLog)
+├── routers/
+│   ├── contracts.py      # CRUD, generate, modify, risks, annex, terminate
+│   ├── analytics.py      # 20 analytics endpoints
+│   ├── exports.py        # CSV, XLSX, ZIP, per-client
+│   ├── ai.py             # AI search, chat, generate, recommend
+│   └── system.py         # Templates, clauses, backup, import, NIP lookup
+├── services/
+│   ├── ai_service.py     # Claude Haiku/Sonnet integration
+│   ├── annex_service.py  # DOCX annex generation
+│   ├── benchmark_service.py  # Market rate comparison
+│   ├── clause_library.py # Standard contract clauses
+│   ├── docx_service.py   # python-docx contract generation
+│   ├── email_service.py  # Welcome email templates
+│   ├── html_service.py   # DOCX→HTML conversion
+│   ├── import_service.py # Excel import
+│   ├── negotiation_service.py  # Rate recommendation
+│   ├── notification_service.py # Alerts, digest, renewals
+│   ├── quality_service.py # Data quality checks
+│   ├── rag_service.py    # ChromaDB + Voyage AI
+│   ├── regon_service.py  # NIP/KRS lookup
+│   ├── template_service.py # DOCX template management
+│   ├── termination_service.py # Termination agreements
+│   └── traffit_service.py # ATS integration (stub)
+├── middleware/
+│   ├── rate_limit.py     # 20 AI / 100 general per minute
+│   └── sanitize.py       # XSS, SQL injection prevention
+└── tests/
+    ├── test_api.py       # 20 core tests
+    ├── test_advanced.py  # 17 advanced tests
+    ├── test_contracts.py # 6 integration tests
+    └── test_workflow.py  # 2 e2e lifecycle tests
+
+frontend/
+├── app/
+│   ├── page.tsx          # Dashboard (KPI, table, pagination, sorting)
+│   ├── new/              # Generate contract form
+│   ├── quick/            # AI quick generate (NL → contract)
+│   ├── contracts/[id]/   # Detail, edit, annex, print
+│   ├── analytics/        # Year trends, top roles, recruiters
+│   ├── insights/         # Seasonality, velocity, duplicates
+│   ├── benchmark/        # Rate vs market comparison
+│   ├── ceo/              # CEO dashboard
+│   ├── recruiter/        # Recruiter quick panel
+│   ├── legal/            # RAG legal search
+│   ├── clauses/          # Clause library
+│   ├── search/           # Global search
+│   ├── compare/          # Side-by-side contract diff
+│   ├── alerts/           # Data quality alerts
+│   ├── enrichment/       # Bulk rate suggestions
+│   ├── contractor/[name]/ # Contractor profile
+│   ├── stats/            # Statistics
+│   ├── settings/         # System settings
+│   ├── import/           # Excel import UI
+│   └── docs/             # API docs browser
+└── lib/api.ts            # API client
 ```
 
-## 🔐 Domyślne dane logowania
+## Key Features
 
-- **Login:** `rekruter`
-- **Hasło:** `B2Bnet2026!`
+### Contract Management
+- Generate B2B contracts from Word template (auto-fill placeholders)
+- Modify paragraphs with AI (Claude Sonnet)
+- Generate annexes (rate change, role change, termination)
+- Status workflow: draft → do_podpisu → aktywna → zakończona
+- Pre-sign validation (NIP, email, rate, DOCX required)
+- Onboarding checklist (7 steps)
 
-⚠️ Zmień hasło w pliku `.env` przed wdrożeniem produkcyjnym!
+### AI Features
+- **Full Contract Review** — Sonnet analyzes entire DOCX, score 1-10
+- **Risk Assessment** — RAG + AI for legal risk analysis
+- **AI Search** — "wszyscy testerzy w Nordea" → natural language
+- **Quick Generate** — describe contract in Polish → AI extracts fields
+- **Chat** — ask questions about contracts in natural language
+- **Rate Recommendation** — AI suggests optimal rate with leverage scoring
 
-## 📡 API Endpoints
+### Analytics
+- 20+ analytics endpoints (seasonal, aging, velocity, duplicates, etc.)
+- Portfolio value calculator (annual revenue estimate)
+- Rate benchmarks vs market (No Fluff Jobs, JustJoinIT 2024-2025)
+- Recruiter performance stats
+- KSeF readiness check
+- Contract similarity search
 
-| Metoda | Endpoint | Opis |
-|--------|----------|------|
-| GET | `/login` | Strona logowania |
-| POST | `/login` | Weryfikacja hasła |
-| GET | `/logout` | Wylogowanie |
-| GET | `/generator` | Główna strona aplikacji |
-| GET | `/api/ceidg/{nip}` | Pobierz dane firmy z CEIDG |
-| POST | `/api/chat` | Wyślij pytanie do chatbota |
-| POST | `/api/generate` | Wygeneruj umowę DOCX |
+### Data
+- **1000+ contracts** (historical import from Excel + new)
+- **158 RAG legal chunks** (KC, KP, RODO, KSeF)
+- **8 standard clauses** with risk levels
+- **65+ unique clients** (Nordea 47%, BNP 11%)
 
-## 💬 ChatBot - możliwości
+## Deployment
 
-### Pola które chatbot może modyfikować:
-- Okres wypowiedzenia (1/2/3 miesiące)
-- Stawka godzinowa
-- Data rozpoczęcia
-- Czas trwania umowy
-- Specjalizacja
-- Dane klienta projektu
+```bash
+# Docker
+docker-compose up -d
 
-### Pola nieedytowalne:
-- Kary umowne (50 000 zł / 100 000 zł)
-- Zakaz konkurencji (12 miesięcy)
-- Prawa autorskie
-- Zapisy RODO
+# Makefile
+make dev        # Start both
+make test       # Run 45 tests
+make build      # Production frontend build
+make backup     # Database backup
+make check      # Daily health check
+make stats      # Show current stats
+```
 
-## 🔧 Konfiguracja CEIDG API
+## API
 
-1. Zarejestruj się na https://dane.biznes.gov.pl
-2. Uzyskaj klucz API
-3. Ustaw `CEIDG_API_KEY` w zmiennych środowiskowych
+**94 endpoints** organized in 5 groups:
+- `/api/contracts/*` — CRUD, generate, modify, risks
+- `/api/analytics/*` — 20 analytics endpoints
+- `/api/contracts/export/*` — CSV, XLSX, ZIP
+- `/api/ai/*` — search, chat, generate, recommend
+- `/api/*` — system, templates, clauses, lookup
 
-Bez klucza API system używa danych demo dla testów.
+Swagger UI: http://localhost:8001/docs
 
-## 📝 Licencja
+## Stack
+- Backend: FastAPI 6.6 + SQLAlchemy + SQLite + python-docx
+- Frontend: Next.js 16 + Tailwind CSS + TypeScript
+- AI: Claude Haiku (fast) + Sonnet (legal) via Anthropic API
+- RAG: Voyage AI voyage-3-lite + ChromaDB (158 chunks)
+- Market data: No Fluff Jobs, JustJoinIT 2024-2025
 
-Własnościowe - B2B.net S.A.
+## Tests
+```bash
+make test       # 45 tests, ALL PASS
+make test-quick # 37 quick tests
+```

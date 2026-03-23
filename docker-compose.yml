@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8001:8001"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - VOYAGE_API_KEY=${VOYAGE_API_KEY}
+      - DATABASE_URL=sqlite:///./paragraf.db
+      - CHROMADB_PATH=/data/chromadb
+    volumes:
+      - ./backend/output:/app/output
+      - ./backend/paragraf.db:/app/paragraf.db
+      - chromadb_data:/data/chromadb
+      - contract_templates:/app/templates
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3002:3002"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8001/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  chromadb_data:
+  contract_templates:

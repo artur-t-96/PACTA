@@ -1,0 +1,34 @@
+{
+  "admin": {
+    "name": "Administrator",
+    "role": "admin",
+    "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+    "api_key": "13f0d9583e3b1ee3a32182342daa2d62",
+    "created_at": "2026-03-21T11:02:32.143863",
+    "active": true
+  },
+  "marta": {
+    "name": "Marta Kozarzewska",
+    "role": "manager",
+    "password_hash": "a760395ae4c4b2241313f6b462258db840319c1195e61d40b2b5a88d236faa2d",
+    "api_key": "9cb7a0dee4f0244f27962743f8bfe4ec",
+    "created_at": "2026-03-21T11:02:32.143903",
+    "active": true
+  },
+  "rekruter": {
+    "name": "Rekruter",
+    "role": "recruiter",
+    "password_hash": "91535815626a3e37431b21b2ccb76f7671f7c6b6df3ae6be04f2296e65a626e9",
+    "api_key": "37f104d8006ff6b3e196ce66fe0f64c6",
+    "created_at": "2026-03-21T11:02:32.143907",
+    "active": true
+  },
+  "olaf": {
+    "name": "Olaf Moczydłowski",
+    "role": "recruiter",
+    "password_hash": "222050d418943c0ea4a94f4d562db5f88bd197bbf607e661a9ccd040dda3101d",
+    "api_key": "3f6db0d109821f24367f453601d5ab3b",
+    "created_at": "2026-03-21T11:02:52.424014",
+    "active": true
+  }
+}

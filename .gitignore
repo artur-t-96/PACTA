@@ -1,6 +1,27 @@
+# Python
 __pycache__/
 *.pyc
-.env
-venv/
-.DS_Store
-pacta_updated.zip
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+
+# Database
+*.db
+
+# Generated contracts (keep in git for demo, remove in prod)
+# backend/output/contracts/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+.docker/
+
+# Env
+.env.local
+.env.production

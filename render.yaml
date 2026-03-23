@@ -1,20 +1,55 @@
-# Render deployment configuration
-# https://render.com/docs/blueprint-spec
-
 services:
   - type: web
-    name: pacta
-    env: docker
-    plan: free
-    healthCheckPath: /login
+    name: paragraf-backend
+    runtime: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health
     envVars:
-      - key: LOGIN
-        value: rekruter
-      - key: PASSWORD
-        sync: false  # Set manually in Render dashboard
-      - key: SECRET_KEY
-        generateValue: true
+      - key: PORT
+        value: 8001
+      - key: PARAGRAF_DATA_DIR
+        value: /var/data
+      - key: DATABASE_URL
+        value: sqlite:////var/data/paragraf.db
+      - key: CHROMADB_PATH
+        value: /var/data/chromadb
+      - key: TEMPLATE_PATH
+        value: /var/data/templates/Umowa_B2B_draft_2026_od_02.03.2026.docx
+      - key: OUTPUT_DIR
+        value: /var/data/output/contracts
+      - key: BACKUP_DIR
+        value: /var/data/backups
+      - key: PARAGRAF_AUTH
+        value: "false"
       - key: ANTHROPIC_API_KEY
-        sync: false  # Set manually in Render dashboard
-      - key: CEIDG_API_KEY
-        sync: false  # Set manually in Render dashboard
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: PARAGRAF_API_KEY
+        sync: false
+      - key: TRAFFIT_API_KEY
+        sync: false
+      - key: TRAFFIT_BASE_URL
+        value: https://api.traffit.com/v1
+      - key: MS365_SENDER_EMAIL
+        value: administracja@b2bnet.pl
+    disk:
+      name: paragraf-data
+      mountPath: /var/data
+      sizeGB: 10
+
+  - type: web
+    name: paragraf-frontend
+    runtime: docker
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: /api
+      - key: NEXT_PUBLIC_BACKEND_ORIGIN
+        fromService:
+          type: web
+          name: paragraf-backend
+          property: url

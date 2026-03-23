@@ -11,6 +11,22 @@ from services.rag_service import search_legal_context
 
 router = APIRouter()
 
+@router.post('/debug/force-bootstrap-db')
+def force_bootstrap_db():
+    db_url = os.getenv('DATABASE_URL', 'sqlite:///./paragraf.db')
+    db_path = db_url.replace('sqlite:///', '')
+    bundled_db = '/app/bootstrap/paragraf.db'
+    if not os.path.exists(bundled_db):
+        return {'ok': False, 'error': 'bundled db missing', 'bundled_db': bundled_db}
+    engine.dispose()
+    shutil.copy2(bundled_db, db_path)
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+    cur.execute('select count(*) from contracts')
+    count = cur.fetchone()[0]
+    con.close()
+    return {'ok': True, 'db_path': db_path, 'contracts_count': count, 'db_size': os.path.getsize(db_path)}
+
 @router.get('/debug/storage-status')
 def debug_storage_status():
     db_url = os.getenv('DATABASE_URL', 'sqlite:///./paragraf.db')

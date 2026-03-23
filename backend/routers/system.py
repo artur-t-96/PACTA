@@ -15,11 +15,17 @@ router = APIRouter()
 def debug_storage_status():
     db_url = os.getenv('DATABASE_URL', 'sqlite:///./paragraf.db')
     db_path = db_url.replace('sqlite:///', '')
+    bundled_db = '/app/bootstrap/paragraf.db'
+    bundled_chroma = '/app/bootstrap/chromadb'
     info = {
         'database_url': db_url,
         'resolved_db_path': db_path,
         'db_exists': os.path.exists(db_path),
         'db_size': os.path.getsize(db_path) if os.path.exists(db_path) else None,
+        'bundled_db_exists': os.path.exists(bundled_db),
+        'bundled_db_size': os.path.getsize(bundled_db) if os.path.exists(bundled_db) else None,
+        'bundled_chroma_exists': os.path.exists(bundled_chroma),
+        'bundled_chroma_entries': len(os.listdir(bundled_chroma)) if os.path.exists(bundled_chroma) else None,
         'data_dir': os.getenv('PARAGRAF_DATA_DIR', '/var/data'),
         'chroma_path': os.getenv('CHROMADB_PATH', '/var/data/chromadb'),
         'template_path': os.getenv('TEMPLATE_PATH', '/var/data/templates/template.docx'),

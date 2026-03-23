@@ -11,19 +11,21 @@ TARGET_TEMPLATE="${TEMPLATE_PATH:-$TEMPLATE_DIR/Umowa_B2B_draft_2026_od_02.03.20
 BUNDLED_DB="/app/bootstrap/paragraf.db"
 TARGET_DB="$DATA_DIR/paragraf.db"
 BUNDLED_CHROMA_DIR="/app/bootstrap/chromadb"
+FORCE_BOOTSTRAP="${FORCE_BOOTSTRAP:-false}"
 
 mkdir -p "$DATA_DIR" "$TEMPLATE_DIR" "$OUTPUT_DIR" "$BACKUP_DIR" "$CHROMA_DIR"
 mkdir -p "$DATA_DIR/output/contracts/annexes" "$DATA_DIR/output/contracts/terminations" "$DATA_DIR/output/contracts/versions"
 
-if [ -f "$BUNDLED_TEMPLATE" ] && [ ! -f "$TARGET_TEMPLATE" ]; then
+if [ -f "$BUNDLED_TEMPLATE" ] && { [ ! -f "$TARGET_TEMPLATE" ] || [ "$FORCE_BOOTSTRAP" = "true" ]; }; then
   cp "$BUNDLED_TEMPLATE" "$TARGET_TEMPLATE"
 fi
 
-if [ -f "$BUNDLED_DB" ] && [ ! -f "$TARGET_DB" ]; then
+if [ -f "$BUNDLED_DB" ] && { [ ! -f "$TARGET_DB" ] || [ "$FORCE_BOOTSTRAP" = "true" ]; }; then
   cp "$BUNDLED_DB" "$TARGET_DB"
 fi
 
-if [ -d "$BUNDLED_CHROMA_DIR" ] && [ -z "$(ls -A "$CHROMA_DIR" 2>/dev/null || true)" ]; then
+if [ -d "$BUNDLED_CHROMA_DIR" ] && { [ -z "$(ls -A "$CHROMA_DIR" 2>/dev/null || true)" ] || [ "$FORCE_BOOTSTRAP" = "true" ]; }; then
+  rm -rf "$CHROMA_DIR"/*
   cp -R "$BUNDLED_CHROMA_DIR"/. "$CHROMA_DIR"/
 fi
 

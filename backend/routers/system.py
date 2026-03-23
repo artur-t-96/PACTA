@@ -3,6 +3,7 @@ System router — health, backup, import, webhook, usage, settings
 """
 import os
 import json
+import sqlite3
 from fastapi import APIRouter
 from database import SessionLocal, Contract, ContractAuditLog
 from sqlalchemy import func, or_

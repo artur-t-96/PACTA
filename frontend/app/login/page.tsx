@@ -25,13 +25,21 @@ export default function LoginPage() {
 
       if (d.success) {
         // Store in localStorage
+        localStorage.setItem("paragraf_token", d.token);
         localStorage.setItem("paragraf_user", JSON.stringify({
           username: d.username,
           name: d.name,
           role: d.role,
           api_key: d.api_key,
         }));
-        router.push("/");
+        // Redirect based on role
+        if (d.role === "recruiter") {
+          router.push("/recruiter");
+        } else if (d.role === "operator") {
+          router.push("/operator");
+        } else {
+          router.push("/");
+        }
       } else {
         setError(d.error || "Nieprawidłowe dane logowania");
       }

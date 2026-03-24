@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { authFetch, getCurrentUser } from "../lib/auth";
 
 interface User {
   username: string;
@@ -13,26 +15,33 @@ interface User {
 
 const roleColors: Record<string, string> = {
   admin: "bg-red-100 text-red-700",
-  manager: "bg-blue-100 text-blue-700",
+  operator: "bg-blue-100 text-blue-700",
+  manager: "bg-purple-100 text-purple-700",
   recruiter: "bg-green-100 text-green-700",
   viewer: "bg-gray-100 text-gray-700",
 };
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newUser, setNewUser] = useState({ username: "", name: "", role: "recruiter", password: "" });
   const [message, setMessage] = useState("");
 
   const loadUsers = () => {
-    fetch("/api/users").then(r => r.json()).then(setUsers).catch(() => {});
+    authFetch("/api/users").then(r => r.json()).then(setUsers).catch(() => {});
   };
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!user) { router.replace("/login"); return; }
+    if (user.role !== "admin") { router.replace("/login"); return; }
+    loadUsers();
+  }, []);
 
   async function handleCreate() {
-    const r = await fetch("/api/users", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    const r = await authFetch("/api/users", {
+      method: "POST",
       body: JSON.stringify(newUser),
     });
     const d = await r.json();
@@ -47,8 +56,8 @@ export default function UsersPage() {
   }
 
   async function changeRole(username: string, newRole: string) {
-    await fetch(`/api/users/${username}/role`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
+    await authFetch(`/api/users/${username}/role`, {
+      method: "PATCH",
       body: JSON.stringify({ role: newRole }),
     });
     loadUsers();
@@ -90,8 +99,8 @@ export default function UsersPage() {
               <select value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="admin">Administrator</option>
-                <option value="manager">Manager / Zarząd</option>
-                <option value="recruiter">Rekruter</option>
+                <option value="operator">Operator (pełny dostęp AI)</option>
+                <option value="recruiter">Rekruter (tylko zgłoszenia)</option>
                 <option value="viewer">Podgląd</option>
               </select>
             </div>
@@ -133,7 +142,7 @@ export default function UsersPage() {
                     disabled={u.username === "admin"}
                   >
                     <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
+                    <option value="operator">Operator</option>
                     <option value="recruiter">Rekruter</option>
                     <option value="viewer">Podgląd</option>
                   </select>
@@ -143,9 +152,15 @@ export default function UsersPage() {
                 <td className="px-4 py-3">
                   {u.username !== "admin" && u.active && (
                     <button onClick={async () => {
-                      await fetch(`/api/users/${u.username}`, { method: "DELETE" });
+                      await authFetch(`/api/users/${u.username}`, { method: "DELETE" });
                       loadUsers();
                     }} className="text-red-400 hover:text-red-600 text-xs">Dezaktywuj</button>
+                  )}
+                  {u.username !== "admin" && !u.active && (
+                    <button onClick={async () => {
+                      await authFetch(`/api/users/${u.username}/activate`, { method: "POST" });
+                      loadUsers();
+                    }} className="text-green-500 hover:text-green-700 text-xs">Aktywuj</button>
                   )}
                 </td>
               </tr>
@@ -158,8 +173,8 @@ export default function UsersPage() {
         <p className="font-medium mb-2">Uprawnienia ról:</p>
         <ul className="space-y-1">
           <li><span className="font-semibold text-red-600">Admin</span> — pełen dostęp + backup + import + zarządzanie użytkownikami</li>
-          <li><span className="font-semibold text-blue-600">Manager</span> — umowy + aneksy + rozwiązania + eksporty + review AI + email</li>
-          <li><span className="font-semibold text-green-600">Rekruter</span> — umowy + aneksy + analityka + raporty</li>
+          <li><span className="font-semibold text-blue-600">Operator</span> — pełny dostęp AI: umowy, aneksy, modyfikacje, eksporty, przegląd prawny; przetwarza zgłoszenia od rekruterów</li>
+          <li><span className="font-semibold text-green-600">Rekruter</span> — tylko zgłoszenia: może składać zlecenia i odebrać wyniki; nie ma dostępu do AI</li>
           <li><span className="font-semibold text-gray-600">Podgląd</span> — tylko odczyt umów i raportów</li>
         </ul>
       </div>

@@ -3,60 +3,12 @@ System router — health, backup, import, webhook, usage, settings
 """
 import os
 import json
-import sqlite3
 from fastapi import APIRouter
 from database import SessionLocal, Contract, ContractAuditLog
 from sqlalchemy import func, or_
 from services.rag_service import search_legal_context
 
 router = APIRouter()
-
-@router.post('/debug/force-bootstrap-db')
-def force_bootstrap_db():
-    db_url = os.getenv('DATABASE_URL', 'sqlite:///./paragraf.db')
-    db_path = db_url.replace('sqlite:///', '')
-    bundled_db = '/app/bootstrap/paragraf.db'
-    if not os.path.exists(bundled_db):
-        return {'ok': False, 'error': 'bundled db missing', 'bundled_db': bundled_db}
-    engine.dispose()
-    shutil.copy2(bundled_db, db_path)
-    con = sqlite3.connect(db_path)
-    cur = con.cursor()
-    cur.execute('select count(*) from contracts')
-    count = cur.fetchone()[0]
-    con.close()
-    return {'ok': True, 'db_path': db_path, 'contracts_count': count, 'db_size': os.path.getsize(db_path)}
-
-@router.get('/debug/storage-status')
-def debug_storage_status():
-    db_url = os.getenv('DATABASE_URL', 'sqlite:///./paragraf.db')
-    db_path = db_url.replace('sqlite:///', '')
-    bundled_db = '/app/bootstrap/paragraf.db'
-    bundled_chroma = '/app/bootstrap/chromadb'
-    info = {
-        'database_url': db_url,
-        'resolved_db_path': db_path,
-        'db_exists': os.path.exists(db_path),
-        'db_size': os.path.getsize(db_path) if os.path.exists(db_path) else None,
-        'bundled_db_exists': os.path.exists(bundled_db),
-        'bundled_db_size': os.path.getsize(bundled_db) if os.path.exists(bundled_db) else None,
-        'bundled_chroma_exists': os.path.exists(bundled_chroma),
-        'bundled_chroma_entries': len(os.listdir(bundled_chroma)) if os.path.exists(bundled_chroma) else None,
-        'data_dir': os.getenv('PARAGRAF_DATA_DIR', '/var/data'),
-        'chroma_path': os.getenv('CHROMADB_PATH', '/var/data/chromadb'),
-        'template_path': os.getenv('TEMPLATE_PATH', '/var/data/templates/template.docx'),
-        'force_bootstrap': os.getenv('FORCE_BOOTSTRAP', 'false'),
-    }
-    if os.path.exists(db_path):
-        try:
-            con = sqlite3.connect(db_path)
-            cur = con.cursor()
-            cur.execute('select count(*) from contracts')
-            info['contracts_count'] = cur.fetchone()[0]
-            con.close()
-        except Exception as e:
-            info['contracts_count_error'] = str(e)
-    return info
 
 
 # ===== Auth / Users =====
@@ -75,6 +27,7 @@ def get_roles_list():
     return {
         role: {"label": data["label"], "permissions_count": len(data["permissions"])}
         for role, data in ROLES.items()
+        if role not in ("manager", "viewer")  # hide legacy roles from UI
     }
 
 
@@ -106,18 +59,41 @@ def deactivate_user(username: str):
 
 @router.post("/auth/login")
 def login(data: dict):
-    """Authenticate and get API key."""
-    from services.auth_service import authenticate
+    """Authenticate and return JWT token + user info."""
+    from services.auth_service import authenticate, create_token
     user = authenticate(username=data.get("username"), password=data.get("password"))
     if not user:
-        return {"success": False, "error": "Invalid credentials"}
+        return {"success": False, "error": "Nieprawidłowy login lub hasło"}
+    token = create_token(user)
     return {
         "success": True,
+        "token": token,
         "username": user["username"],
         "name": user["name"],
         "role": user["role"],
         "api_key": user.get("api_key", ""),
     }
+
+
+@router.get("/auth/me")
+def me_endpoint(request: dict = None):
+    """Return current user info (validated via middleware)."""
+    # The middleware injects X-Current-User header; we read from request state
+    from fastapi import Request
+    return {"message": "Use Authorization: Bearer <token> to authenticate"}
+
+
+@router.post("/users/{username}/activate")
+def activate_user(username: str):
+    """Reactivate a deactivated user."""
+    import json, os
+    from services.auth_service import USERS_FILE, _load_users, _save_users
+    users = _load_users()
+    if username not in users:
+        return {"error": "User not found"}
+    users[username]["active"] = True
+    _save_users(users)
+    return {"success": True}
 
 
 # ===== System =====

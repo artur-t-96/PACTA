@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db
-from routers import contracts, analytics, exports, ai, system
+from routers import contracts, analytics, exports, ai, system, tickets
 
 app = FastAPI(
     title="PARAGRAF — AI Contract Management",
@@ -51,37 +51,62 @@ AUTH_ENABLED = os.getenv("PARAGRAF_AUTH", "").lower() in ("true", "1", "yes")
 async def log_and_auth(request, call_next):
     import time as _time
     from starlette.responses import JSONResponse
-    
-    # API key check
-    if API_KEY and request.url.path.startswith("/api/"):
-        if request.url.path not in ("/health", "/", "/docs", "/openapi.json"):
-            key = request.headers.get("X-API-Key", request.query_params.get("api_key", ""))
-            if key != API_KEY:
+
+    PUBLIC_PATHS = ("/health", "/", "/docs", "/openapi.json", "/api/auth/login")
+    path = request.url.path
+
+    # API key check (legacy — single shared API key)
+    if API_KEY and path.startswith("/api/") and path not in PUBLIC_PATHS:
+        key = request.headers.get("X-API-Key", request.query_params.get("api_key", ""))
+        if key != API_KEY:
+            # Also allow JWT Bearer token as alternative
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer "):
                 return JSONResponse(status_code=401, content={"detail": "Invalid API key"})
-    
-    # RBAC auth (optional — set PARAGRAF_AUTH=true)
-    if AUTH_ENABLED and request.url.path.startswith("/api/") and request.url.path not in ("/api/auth/login",):
+
+    # JWT auth — always active for ticket endpoints; optional elsewhere
+    user = None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        from services.auth_service import verify_token
+        user = verify_token(token)
+
+    # Also support legacy API key per-user auth
+    if not user and AUTH_ENABLED:
         user_key = request.headers.get("X-API-Key", request.query_params.get("api_key", ""))
         if user_key:
-            from services.auth_service import authenticate, check_endpoint_permission
+            from services.auth_service import authenticate
             user = authenticate(api_key=user_key)
-            if not user:
-                return JSONResponse(status_code=401, content={"detail": "Invalid API key"})
-            if not check_endpoint_permission(user, request.method, request.url.path):
-                return JSONResponse(status_code=403, content={"detail": "Insufficient permissions"})
-    
+
+    # Store current user in request state for route handlers
+    request.state.current_user = user
+
+    # Enforce auth on ticket endpoints (always require login)
+    if path.startswith("/api/tickets"):
+        if not user:
+            return JSONResponse(status_code=401, content={"detail": "Wymagane logowanie (Bearer token)"})
+
+    # RBAC check (optional — set PARAGRAF_AUTH=true)
+    if AUTH_ENABLED and path.startswith("/api/") and path not in PUBLIC_PATHS:
+        if not user:
+            return JSONResponse(status_code=401, content={"detail": "Wymagane logowanie"})
+        from services.auth_service import check_endpoint_permission
+        if not check_endpoint_permission(user, request.method, path):
+            return JSONResponse(status_code=403, content={"detail": "Insufficient permissions"})
+
     # Rate limiting
     from middleware.rate_limit import check_rate_limit
     client_ip = request.client.host if request.client else "unknown"
-    is_ai = request.url.path.startswith("/api/ai/") or "full-review" in request.url.path
+    is_ai = path.startswith("/api/ai/") or "full-review" in path
     if not check_rate_limit(client_ip, is_ai):
         return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Try again later."})
-    
+
     start = _time.time()
     response = await call_next(request)
     elapsed = (_time.time() - start) * 1000
-    if not request.url.path.startswith("/_next"):
-        logger.info(f"{request.method} {request.url.path} → {response.status_code} ({elapsed:.0f}ms)")
+    if not path.startswith("/_next"):
+        logger.info(f"{request.method} {path} → {response.status_code} ({elapsed:.0f}ms)")
     return response
 
 
@@ -91,6 +116,7 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"]
 app.include_router(exports.router, prefix="/api/contracts/export", tags=["exports"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(system.router, prefix="/api", tags=["system"])
+app.include_router(tickets.router, prefix="/api/tickets", tags=["tickets"])
 
 # Output directory
 os.makedirs(os.getenv("OUTPUT_DIR", "./output/contracts"), exist_ok=True)

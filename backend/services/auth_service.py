@@ -1,13 +1,51 @@
 """
 Auth service — Role-Based Access Control (RBAC)
-Roles: admin, manager, recruiter, viewer
+Roles: admin, operator, recruiter (+ legacy: manager, viewer)
 """
 import os
 import json
+import hmac
 import hashlib
 import secrets
+import base64
+import time
 from datetime import datetime, timedelta
 from typing import Optional
+
+SECRET_KEY = os.getenv("SECRET_KEY", "paragraf-jwt-secret-2026")
+TOKEN_EXPIRE_HOURS = 24 * 7  # 7 days
+
+
+def create_token(user: dict) -> str:
+    """Create a signed JWT-like token for the user."""
+    payload = {
+        "username": user["username"],
+        "name": user.get("name", ""),
+        "role": user.get("role", "viewer"),
+        "exp": int(time.time()) + TOKEN_EXPIRE_HOURS * 3600,
+    }
+    data = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    sig = hmac.new(SECRET_KEY.encode(), data.encode(), hashlib.sha256).hexdigest()
+    return f"{data}.{sig}"
+
+
+def verify_token(token: str) -> Optional[dict]:
+    """Verify a token and return its payload, or None if invalid/expired."""
+    try:
+        parts = token.rsplit(".", 1)
+        if len(parts) != 2:
+            return None
+        data, sig = parts
+        expected = hmac.new(SECRET_KEY.encode(), data.encode(), hashlib.sha256).hexdigest()
+        if sig != expected:
+            return None
+        padded = data + "=" * (4 - len(data) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded).decode())
+        if payload.get("exp") and time.time() > payload["exp"]:
+            return None
+        return payload
+    except Exception:
+        return None
 
 USERS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/users.json")
 
@@ -16,6 +54,25 @@ ROLES = {
     "admin": {
         "label": "Administrator",
         "permissions": ["*"],  # All permissions
+    },
+    "operator": {
+        "label": "Operator (pełny dostęp AI)",
+        "permissions": [
+            "contracts.read", "contracts.create", "contracts.modify", "contracts.status",
+            "contracts.annex", "contracts.terminate", "contracts.delete",
+            "contracts.review", "contracts.email",
+            "analytics.read", "analytics.export",
+            "reports.read",
+            "legal.read",
+            "settings.read",
+            "tickets.read", "tickets.process", "tickets.complete",
+        ],
+    },
+    "recruiter": {
+        "label": "Rekruter (tylko zgłoszenia)",
+        "permissions": [
+            "tickets.read", "tickets.create",
+        ],
     },
     "manager": {
         "label": "Zarząd / Manager",
@@ -27,16 +84,6 @@ ROLES = {
             "reports.read",
             "legal.read",
             "settings.read",
-        ],
-    },
-    "recruiter": {
-        "label": "Rekruter",
-        "permissions": [
-            "contracts.read", "contracts.create", "contracts.modify", "contracts.status",
-            "contracts.annex",
-            "analytics.read",
-            "reports.read",
-            "legal.read",
         ],
     },
     "viewer": {
@@ -92,7 +139,7 @@ def _load_users() -> dict:
         },
         "marta": {
             "name": "Marta Kozarzewska",
-            "role": "manager",
+            "role": "operator",
             "password_hash": _hash_password("marta2026"),
             "api_key": secrets.token_hex(16),
             "created_at": datetime.now().isoformat(),
@@ -154,21 +201,27 @@ def check_endpoint_permission(user: dict, method: str, path: str) -> bool:
     """Check if user can access an endpoint."""
     if not user:
         return True  # No auth configured → allow all
-    
+
     role = user.get("role", "viewer")
-    if role == "admin":
+    if role in ("admin", "operator"):
         return True
-    
+
+    # Recruiters can only access ticket endpoints and auth
+    if role == "recruiter":
+        if path.startswith("/api/tickets") or path.startswith("/api/auth"):
+            return True
+        return False
+
     # Check specific endpoint permissions
     for pattern, permission in ENDPOINT_PERMISSIONS.items():
         pat_method, pat_path = pattern.split(" ", 1)
         if method == pat_method and (path.startswith(pat_path) or pat_path.replace("*", "") in path):
             return has_permission(user, permission)
-    
+
     # Default: allow GET for all authenticated users
     if method == "GET":
         return True
-    
+
     return True  # Default allow (security by endpoint, not blanket deny)
 
 

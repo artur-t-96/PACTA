@@ -3,7 +3,7 @@ Database setup — SQLite via SQLAlchemy
 """
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Float
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -54,6 +54,25 @@ class Contract(Base):
     file_path = Column(String(500))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Ticket(Base):
+    """Ticket submitted by recruiter, processed by operator."""
+    __tablename__ = "tickets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String(100))  # generate_contract, check_risks, modify_paragraph
+    status = Column(String(50), default="pending")  # pending, in_progress, completed
+    title = Column(String(300))
+    requester_id = Column(String(100), index=True)  # username of recruiter
+    operator_id = Column(String(100), nullable=True)  # username of operator who processed it
+    details = Column(Text)  # JSON with type-specific request data
+    result = Column(Text, nullable=True)  # JSON result from operator
+    result_file_path = Column(String(500), nullable=True)  # path to output file if any
+    seen_by_requester = Column(Boolean, default=False)  # for notification badge
+    created_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
 
 
 def init_db():

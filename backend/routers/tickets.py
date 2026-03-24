@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from database import get_db, Ticket
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def _get_current_user(request: Request) -> dict:
@@ -43,7 +43,7 @@ def _ticket_to_dict(t: Ticket) -> dict:
     }
 
 
-@router.post("/")
+@router.post("")
 def create_ticket(request: Request, data: dict, db: Session = Depends(get_db)):
     """Recruiter creates a new ticket."""
     user = _require_role(request, "recruiter", "operator", "admin")
@@ -75,7 +75,7 @@ def create_ticket(request: Request, data: dict, db: Session = Depends(get_db)):
     return _ticket_to_dict(ticket)
 
 
-@router.get("/")
+@router.get("")
 def list_tickets(request: Request, db: Session = Depends(get_db)):
     """
     Operator/admin sees all tickets.

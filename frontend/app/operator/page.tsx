@@ -226,31 +226,40 @@ export default function OperatorPage() {
                 </div>
               </div>
 
-              {/* AI tools quick links (only for pending/in_progress) */}
+              {/* AI Assistant link (for pending/in_progress) */}
               {selected.status !== "completed" && (
                 <div className="mb-4">
                   <h3 className="text-sm font-medium text-gray-700 mb-2">Narzędzia AI</h3>
                   <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={`/operator/ai?ticket=${selected.id}`}
+                      className="flex items-center gap-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2 rounded-lg transition-colors font-medium"
+                    >
+                      🤖 Otwórz AI Assistant
+                    </Link>
                     {selected.type === "generate_contract" && (
-                      <>
-                        <QuickAction href="/new" label="📄 Generuj umowę" />
-                        <QuickAction href="/quick" label="⚡ Quick Generate" />
-                        <QuickAction href="/onboard" label="🚀 Onboarding" />
-                      </>
+                      <Link
+                        href={`/operator/ai?ticket=${selected.id}`}
+                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        📄 Generuj umowę z AI
+                      </Link>
                     )}
                     {selected.type === "check_risks" && (
-                      <>
-                        <QuickAction href="/legal" label="📚 Baza prawna" />
-                        <QuickAction href="/" label="🔍 Szukaj umów" />
-                      </>
+                      <Link
+                        href={`/operator/ai?ticket=${selected.id}`}
+                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        ⚖️ Sprawdź ryzyka z AI
+                      </Link>
                     )}
                     {selected.type === "modify_paragraph" && (
-                      <>
-                        {selected.details.contract_id && (
-                          <QuickAction href={`/contracts/${selected.details.contract_id}/edit`} label="✏️ Edytuj umowę" />
-                        )}
-                        <QuickAction href="/" label="🔍 Szukaj umów" />
-                      </>
+                      <Link
+                        href={`/operator/ai?ticket=${selected.id}`}
+                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        ✏️ Modyfikuj z AI
+                      </Link>
                     )}
                   </div>
                 </div>
@@ -262,7 +271,7 @@ export default function OperatorPage() {
                   onClick={() => startTicket(selected)}
                   className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 font-medium text-sm mb-4"
                 >
-                  ▶ Rozpocznij przetwarzanie
+                           ▶ Rozpocznij przetwarzanie
                 </button>
               )}
 
@@ -344,13 +353,3 @@ export default function OperatorPage() {
   );
 }
 
-function QuickAction({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors"
-    >
-      {label}
-    </Link>
-  );
-}

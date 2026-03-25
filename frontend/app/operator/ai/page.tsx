@@ -283,7 +283,7 @@ export default function AIAssistantPage() {
                       <p className="font-medium">
                         Ryzyko: {String((msg.action.data as Record<string, unknown>).ryzyko).toUpperCase()}
                       </p>
-                      {(msg.action.data as Record<string, unknown>).uzasadnienie && (
+                      {Boolean((msg.action.data as Record<string, unknown>).uzasadnienie) && (
                         <p className="mt-1 text-gray-600">{String((msg.action.data as Record<string, unknown>).uzasadnienie)}</p>
                       )}
                     </div>

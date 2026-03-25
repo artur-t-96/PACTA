@@ -98,8 +98,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center text-xs text-gray-400">
-          <p>Domyślne konta: admin / marta / rekruter</p>
-          <p className="mt-1">Włącz PARAGRAF_AUTH=true w .env</p>
+          <p>&copy; 2026 B2B.net S.A.</p>
         </div>
       </div>
     </div>

@@ -399,7 +399,11 @@ export default function RecruiterPage() {
             {selectedTicket.result_file_path && (
               <div className="mt-4">
                 <a
-                  href={`/api/contracts/${selectedTicket.result_file_path}/download`}
+                  href={
+                    /^\d+$/.test(selectedTicket.result_file_path)
+                      ? `/api/contracts/${selectedTicket.result_file_path}/download`
+                      : `/api/contracts/by-number/${encodeURIComponent(selectedTicket.result_file_path)}/download`
+                  }
                   className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700"
                 >
                   📥 Pobierz plik wynikowy

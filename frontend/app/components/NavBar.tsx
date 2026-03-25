@@ -58,14 +58,19 @@ export default function NavBar() {
             )}
 
             {(user?.role === "operator" || user?.role === "admin") && (
-              <Link href="/operator" className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900">
-                Kolejka ticketów
-                {unread > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {unread}
-                  </span>
-                )}
-              </Link>
+              <>
+                <Link href="/operator" className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900">
+                  Kolejka ticketów
+                  {unread > 0 && (
+                    <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {unread}
+                    </span>
+                  )}
+                </Link>
+                <Link href="/operator/ai" className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800">
+                  🤖 AI Assistant
+                </Link>
+              </>
             )}
 
             {user?.role === "admin" && (

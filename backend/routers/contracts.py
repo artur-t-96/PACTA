@@ -309,6 +309,40 @@ def get_contract(contract_id: int, db: Session = Depends(get_db)):
     return contract
 
 
+@router.get("/by-number/{contract_number}/download")
+def download_contract_by_number(contract_number: str, format: str = "docx", db: Session = Depends(get_db)):
+    """Download contract file by contract number (e.g. P-2026-042). Format: docx (default) or pdf."""
+    contract = db.query(Contract).filter(Contract.number == contract_number).first()
+    if not contract:
+        raise HTTPException(status_code=404, detail="Umowa nie znaleziona")
+    if not contract.file_path or not os.path.exists(contract.file_path):
+        raise HTTPException(status_code=404, detail="Plik umowy nie znaleziony")
+
+    if format == "pdf":
+        import subprocess
+        pdf_path = contract.file_path.replace(".docx", ".pdf")
+        if not os.path.exists(pdf_path):
+            try:
+                subprocess.run([
+                    "soffice", "--headless", "--convert-to", "pdf",
+                    "--outdir", os.path.dirname(contract.file_path),
+                    contract.file_path
+                ], timeout=30, capture_output=True)
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                raise HTTPException(status_code=501, detail="Konwersja PDF niedostepna. Pobierz DOCX.")
+        if os.path.exists(pdf_path):
+            return FileResponse(path=pdf_path, filename=os.path.basename(pdf_path), media_type="application/pdf")
+        else:
+            raise HTTPException(status_code=501, detail="Konwersja PDF nie powiodla sie. Pobierz DOCX.")
+
+    filename = os.path.basename(contract.file_path)
+    return FileResponse(
+        path=contract.file_path,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+
+
 @router.get("/{contract_id}/download")
 def download_contract(contract_id: int, format: str = "docx", db: Session = Depends(get_db)):
     """Download contract file. Format: docx (default) or pdf."""

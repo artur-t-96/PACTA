@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db
-from routers import contracts, analytics, exports, ai, system, tickets
+from routers import contracts, analytics, exports, ai, system, tickets, assistant
 
 app = FastAPI(
     title="PARAGRAF — AI Contract Management",
@@ -117,6 +117,7 @@ app.include_router(exports.router, prefix="/api/contracts/export", tags=["export
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(system.router, prefix="/api", tags=["system"])
 app.include_router(tickets.router, prefix="/api/tickets", tags=["tickets"])
+app.include_router(assistant.router, prefix="/api/ai", tags=["ai-assistant"])
 
 # Output directory
 os.makedirs(os.getenv("OUTPUT_DIR", "./output/contracts"), exist_ok=True)
